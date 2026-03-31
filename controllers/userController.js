@@ -12,6 +12,12 @@ exports.registerUser = async (req, res) => {
   try {
     const { name, email, phone, password } = req.body;
 
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        message: "Name, email, and password are required",
+      });
+    }
+
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
@@ -24,12 +30,20 @@ exports.registerUser = async (req, res) => {
       email,
       phone,
       password: hashedPassword,
-      isVerified: true, // ✅ auto verified
+      isVerified: true,
+    });
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
     });
 
     res.status(201).json({
-      message: "User registered successfully",
-      user,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
     });
   } catch (error) {
     res.status(500).json({ message: error.message || "Server error" });
@@ -41,8 +55,20 @@ exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
+    }
+
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (!user.password) {
+      return res.status(400).json({
+        message: "Please sign in with Google for this account",
+      });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
@@ -52,7 +78,14 @@ exports.loginUser = async (req, res) => {
       expiresIn: "7d",
     });
 
-    res.status(200).json({ token, user });
+    res.status(200).json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: error.message || "Server error" });
   }

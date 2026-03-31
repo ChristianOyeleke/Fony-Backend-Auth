@@ -2,7 +2,15 @@ const express = require("express");
 const router = express.Router();
 const protect = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware"); // streamifier version
-const { updateProfile, registerUser, loginUser, googleAuth, forgotPassword, resetPassword, deleteUserByEmail } = require("../controllers/userController");
+const {
+  updateProfile,
+  registerUser,
+  loginUser,
+  forgotPassword,
+  resetPassword,
+  deleteUserByEmail,
+} = require("../controllers/userController");
+const { googleAuth } = require("../controllers/googleAuthController");
 
 // ================= REGISTRATION & LOGIN =================
 router.post("/register", registerUser);
