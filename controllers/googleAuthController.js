@@ -2,7 +2,9 @@ const { OAuth2Client } = require("google-auth-library");
 const jwt = require("jsonwebtoken");
 const User = require("../models/usersModel");
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClientId =
+  process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+const client = new OAuth2Client(googleClientId);
 
 exports.googleAuth = async (req, res) => {
   try {
@@ -12,10 +14,18 @@ exports.googleAuth = async (req, res) => {
       return res.status(400).json({ message: "No token provided" });
     }
 
+    if (!googleClientId) {
+      return res.status(500).json({
+        message: "Google client ID is not configured on the server.",
+      });
+    }
+
     // 🔐 Verify Google token
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: [googleClientId, process.env.VITE_GOOGLE_CLIENT_ID].filter(
+        Boolean,
+      ),
     });
 
     const payload = ticket.getPayload();
@@ -35,18 +45,15 @@ exports.googleAuth = async (req, res) => {
     }
 
     // 🔑 Create JWT
-    const jwtToken = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
 
     res.status(200).json({
       message: "Google login successful",
       token: jwtToken,
       user,
     });
-
   } catch (error) {
     console.error("Google Auth Error:", error);
     res.status(500).json({

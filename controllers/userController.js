@@ -154,9 +154,23 @@ exports.resetPassword = async (req, res) => {
 };
 
 // ================= GOOGLE AUTH =================
+const { OAuth2Client } = require("google-auth-library");
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 exports.googleAuth = async (req, res) => {
   try {
-    const { name, email, googleId } = req.body;
+    const { token } = req.body;
+
+    // ✅ Verify token with Google
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const { name, email, sub: googleId } = payload;
 
     let user = await User.findOne({ email });
 
@@ -169,20 +183,23 @@ exports.googleAuth = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
 
     res.status(200).json({
       message: "Google login successful",
-      token,
+      token: jwtToken,
       user,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message || "Server error" });
+    console.error("Google authentication failed:", error);
+    res.status(401).json({
+      message: "Google authentication failed",
+      error: error.message,
+    });
   }
 };
-
 // ================= UPDATE PROFILE =================
 exports.updateProfile = async (req, res) => {
   try {
