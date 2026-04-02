@@ -24,13 +24,23 @@ const userSchema = new mongoose.Schema(
     },
     name: {
       type: String,
-      required: [true, "Name is required"],
-      unique: true,
-      sparse: true,
       trim: true,
       minlength: [3, "Name must be at least 3 characters long"],
       maxlength: [30, "Name must be at most 30 characters long"],
     },
+    googleId: {
+      type: String,
+      sparse: true,
+    },
+    profilePicture: {
+      type: String,
+      trim: true,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
     password: {
       type: String,
       required: [true, "Password is required"],

@@ -5,10 +5,22 @@ const client = new BrevoClient({
 });
 
 exports.sendEmail = async (to, subject, htmlContent) => {
-  await client.transactionalEmails.sendTransacEmail({
-    sender: { email: process.env.BREVO_SENDER_EMAIL, name:process.env.BREVO_SENDER_NAME},
-    to: [{ email: to }],
-    subject,
-    htmlContent,
-  });
+  try {
+    await client.transactionalEmails.sendTransacEmail({
+      sender: {
+        email:
+          process.env.BREVO_SENDER_EMAIL ||
+          process.env.ADMIN_EMAIL ||
+          "noreply@fonyapp.com",
+        name: process.env.BREVO_SENDER_NAME || "Fony App",
+      },
+      to: [{ email: to }],
+      subject,
+      htmlContent,
+    });
+    console.log(`Email sent to ${to}`);
+  } catch (error) {
+    console.error("Brevo sendEmail error:", error.message);
+    throw new Error("Failed to send email");
+  }
 };
